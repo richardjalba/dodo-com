@@ -16,9 +16,14 @@ io.on('connection', (socket) => {
   console.log('websocket connected');
 
   socket.emit('message', 'Welcome to Dodo Communications.');
+  socket.broadcast.emit('message', 'A new user has joined the chat.');
 
   socket.on('sendMsg', (message) => {
     io.emit('message', message);
+  });
+
+  socket.on('disconnect', () => {
+    io.emit('message', 'A user has left the chat.');
   });
 });
 
