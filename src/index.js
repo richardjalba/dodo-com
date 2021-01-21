@@ -22,6 +22,10 @@ io.on('connection', (socket) => {
     io.emit('message', message);
   });
 
+  socket.on('sendLocation', (location) => {
+    io.emit('message', location);
+  });
+
   socket.on('disconnect', () => {
     io.emit('message', 'A user has left the chat.');
   });
