@@ -3,6 +3,7 @@ const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
 const Filter = require('bad-words');
+const { generateMsg, generateLocationMsg } = require('./utils/messages');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,10 +15,13 @@ const publicDirectoryPath = path.join(__dirname, '../public');
 app.use(express.static(publicDirectoryPath));
 
 io.on('connection', (socket) => {
-  console.log('websocket connected');
+  console.log('Websocket Connected.');
 
-  socket.emit('message', 'Welcome to Dodo Communications.');
-  socket.broadcast.emit('message', 'A new user has joined the chat.');
+  socket.emit('message', generateMsg('Welcome to Dodo Comms Tool.'));
+  socket.broadcast.emit(
+    'message',
+    generateMsg('A new user has joined the chat.')
+  );
 
   socket.on('sendMsg', (message, callback) => {
     const filter = new Filter();
@@ -28,16 +32,16 @@ io.on('connection', (socket) => {
       );
     }
 
-    io.emit('message', message);
+    io.emit('message', generateMsg(message));
     callback();
   });
 
   socket.on('sendLocation', (location) => {
-    io.emit('locationMsg', location);
+    io.emit('locationMsg', generateLocationMsg(location));
   });
 
   socket.on('disconnect', () => {
-    io.emit('message', 'A user has left the chat.');
+    io.emit('message', generateMsg('A user has left the chat.'));
   });
 });
 
