@@ -2,6 +2,7 @@ const path = require('path');
 const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
+const Filter = require('bad-words');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,11 +19,20 @@ io.on('connection', (socket) => {
   socket.emit('message', 'Welcome to Dodo Communications.');
   socket.broadcast.emit('message', 'A new user has joined the chat.');
 
-  socket.on('sendMsg', (message) => {
+  socket.on('sendMsg', (message, callback) => {
+    const filter = new Filter();
+
+    if (filter.isProfane(message)) {
+      return callback(
+        'No Profanity Allowed! - Keep that between you and your mother.'
+      );
+    }
+
     io.emit('message', message);
+    callback();
   });
 
-  socket.on('sendLocation', (location) => {
+  socket.on('sendLocation', (location, callback) => {
     io.emit('message', location);
   });
 
