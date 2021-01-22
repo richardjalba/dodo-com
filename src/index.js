@@ -32,8 +32,8 @@ io.on('connection', (socket) => {
     callback();
   });
 
-  socket.on('sendLocation', (location, callback) => {
-    io.emit('message', location);
+  socket.on('sendLocation', (location) => {
+    io.emit('locationMsg', location);
   });
 
   socket.on('disconnect', () => {

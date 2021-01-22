@@ -1,13 +1,30 @@
 const socket = io();
 
-// Common Elements
+// List of Elements
 const $messageForm = document.querySelector('#message-form');
 const $messageFormInput = $messageForm.querySelector('input');
 const $messageFormButton = $messageForm.querySelector('button');
 const $locationShareButton = $messageForm.querySelector('#share-location');
+const $messages = document.querySelector('#messages');
+
+// Templates
+const messageTemplate = document.querySelector('#message-template').innerHTML;
+const locationTemplate = document.querySelector('#location-template').innerHTML;
 
 socket.on('message', (message) => {
   console.log(message);
+  const html = Mustache.render(messageTemplate, {
+    message,
+  });
+  $messages.insertAdjacentHTML('beforeend', html);
+});
+
+socket.on('locationMsg', (url) => {
+  console.log(url);
+  const html = Mustache.render(locationTemplate, {
+    url,
+  });
+  $messages.insertAdjacentHTML('beforeend', html);
 });
 
 $messageForm.addEventListener('submit', (e) => {
