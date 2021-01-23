@@ -3,7 +3,16 @@ const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
 const Filter = require('bad-words');
-const { generateMsg, generateLocationMsg } = require('./utils/messages');
+const {
+  generateMessage,
+  generateLocationMessage,
+} = require('./utils/messages');
+const {
+  addUser,
+  removeUser,
+  getUser,
+  getUsersInRoom,
+} = require('./utils/users');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,36 +24,82 @@ const publicDirectoryPath = path.join(__dirname, '../public');
 app.use(express.static(publicDirectoryPath));
 
 io.on('connection', (socket) => {
-  console.log('Websocket Connected.');
+  console.log('WebSocket Connected.');
 
-  socket.emit('message', generateMsg('Welcome to Dodo Comms Tool.'));
-  socket.broadcast.emit(
-    'message',
-    generateMsg('A new user has joined the chat.')
-  );
+  socket.on('join', (options, callback) => {
+    const { error, user } = addUser({ id: socket.id, ...options });
 
-  socket.on('sendMsg', (message, callback) => {
+    if (error) {
+      return callback(error);
+    }
+
+    socket.join(user.room);
+
+    socket.emit(
+      'message',
+      generateMessage(
+        `${user.username.toUpperCase()} (Host)`,
+        '🔷 Welcome to Dodo Communications!'
+      )
+    );
+    socket.broadcast
+      .to(user.room)
+      .emit(
+        'message',
+        generateMessage(
+          `${user.username} (Host)`,
+          `🔔 ${user.username.toUpperCase()} has joined!`
+        )
+      );
+    io.to(user.room).emit('roomData', {
+      room: user.room,
+      users: getUsersInRoom(user.room),
+    });
+
+    callback();
+  });
+
+  socket.on('sendMessage', (message, callback) => {
+    const user = getUser(socket.id);
     const filter = new Filter();
 
     if (filter.isProfane(message)) {
       return callback(
-        'No Profanity Allowed! - Keep that between you and your mother.'
+        '🔔 No Profanity Allowed - Keep that between you and your mother.'
       );
     }
 
-    io.emit('message', generateMsg(message));
+    io.to(user.room).emit('message', generateMessage(user.username, message));
     callback();
   });
 
-  socket.on('sendLocation', (location) => {
-    io.emit('locationMsg', generateLocationMsg(location));
+  socket.on('sendLocation', (url) => {
+    const user = getUser(socket.id);
+    io.to(user.room).emit(
+      'locationMessage',
+      generateLocationMessage(user.username, url)
+    );
   });
 
   socket.on('disconnect', () => {
-    io.emit('message', generateMsg('A user has left the chat.'));
+    const user = removeUser(socket.id);
+
+    if (user) {
+      io.to(user.room).emit(
+        'message',
+        generateMessage(
+          'Notification',
+          `👋 ${user.username.toUpperCase()} has left!`
+        )
+      );
+      io.to(user.room).emit('roomData', {
+        room: user.room,
+        users: getUsersInRoom(user.room),
+      });
+    }
   });
 });
 
 server.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}`);
+  console.log(`Server is up on port ${port}!`);
 });
